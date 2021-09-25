@@ -1,0 +1,95 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import cv2
+import time
+
+# INSTRUCTIONS: select 'video_src' to 'file' to add watermark to a video or 'camera' to record a video from camera
+
+# Read an image
+path = '../../data/empire.jpg'
+im = cv2.imread(path)
+print(im.shape)
+
+# save image
+cv2.imwrite('empire.png', im)
+
+im_RGB = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+# create a grayscale version
+im_gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+# im_gray = cv2.cvtColor(im, cv2.COLOR_RGB2GRAY)
+im_BGR = cv2.cvtColor(im_RGB, cv2.COLOR_RGB2BGR)
+
+# show the result in an OpenCV window
+cv2.imshow('Empire', im)
+cv2.waitKey()
+#cv2.waitKey(1000)  # wait one second
+cv2.destroyWindow('Empire')
+
+
+img = cv2.imread(path)
+logo = cv2.resize(img, (100,100))
+
+height, width, c = logo.shape
+alpha = 0.5
+
+video_src = 'camera'
+#video_src = 'file'
+if video_src == 'file':
+
+    video = cv2.VideoCapture('../../data/test1.mp4')
+    video_on = video.isOpened()
+    while video_on:
+        ret, frame = video.read()
+        if ret:
+
+            frame_h, frame_w, frame_c = frame.shape
+
+            blended_frame = cv2.addWeighted(logo, alpha, frame[:height, frame_w - width:frame_w, :], 1 - alpha, 0, frame)
+
+            frame[:height, frame_w - 100:frame_w, :] = blended_frame
+            cv2.namedWindow('file_frame', cv2.WINDOW_NORMAL)
+            cv2.imshow('file_frame', frame)
+            # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            # cv2.imshow('video_frame', gray)
+        else:
+            video_on = False
+        key = cv2.waitKey(1)
+        # Key delay – delay in milliseconds. 0 is the special value that means “forever”.
+        if key == 27:  # Esc key (Ascii number 27) to stop
+            video_on = False
+    cv2.destroyWindow('file_frame')
+    video.release()
+else:
+    # setup video capture
+    video = cv2.VideoCapture(0)
+    video_on = video.isOpened()
+
+    width = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+    # Define the codec
+    today = time.strftime("%Y%m%d-%H%M%S")
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    video_path = '../../data/' + today + '.mp4'
+    fps_out = 30  # frame rate (frames per second), over 30 may not work
+    out = cv2.VideoWriter(video_path, fourcc, fps_out, (width, height))
+
+    i = 0
+    while video_on:
+        ret, im = video.read()
+        if ret:
+            if i > 10:  # skip the first 10 frames
+                cv2.imshow('camera_frame', im)
+                out.write(im)
+        else:
+            video_on = False
+        key = cv2.waitKey(1)
+        if key == 27:  # Esc key to stop
+            video_on = False
+        elif key == ord('s'):
+            cv2.imwrite(str(i)+'_camera_frame.jpg', im)
+        i += 1
+    out.release()
+    video.release()
+    cv2.destroyWindow('camera_frame')
+cv2.destroyAllWindows()
